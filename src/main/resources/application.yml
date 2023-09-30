@@ -1,0 +1,25 @@
+server:
+  port: 5050
+
+
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://8.146.210.52:3306/Eat?serverTimezone=GMT%2B8&rewriteBatchedStatements=true&tinyInt1isBit=false
+    username: SLLKCN
+    password: SLLKCNmysql@2698
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+minio:
+  endpoint: http://8.146.210.52:9000
+  remoteEndpoint: http://8.146.210.52:9000
+  accesskey: v8OWJnuJWmH3YdRYHGO5
+  secretkey: Cxz2Vkhgrw78PaELuICxIXNmIK0EjCpQ702o1Rzh
+  bucketname: health
