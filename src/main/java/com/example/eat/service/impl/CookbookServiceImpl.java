@@ -8,8 +8,9 @@ import com.example.eat.dao.cookbook.ClickDao;
 import com.example.eat.dao.cookbook.CollectionDao;
 import com.example.eat.dao.cookbook.CookbookDao;
 import com.example.eat.model.dto.CommonResult;
-import com.example.eat.model.dto.param.PostCookbook;
+import com.example.eat.model.dto.param.cookbook.PostCookbook;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.cookbook.CookbookCollectRes;
 import com.example.eat.model.dto.res.cookbook.CookbooksGetRes;
 import com.example.eat.model.po.cookbook.Click;
 import com.example.eat.model.po.cookbook.Collection;
@@ -171,7 +172,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
     }
 
     @Override
-    public CommonResult<BlankRes> collectCookbook(Integer cookbookId) {
+    public CommonResult<BlankRes> collectCookbook(Integer isCollect,Integer cookbookId) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -180,20 +181,30 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
             return CommonResult.fail("用户不存在");
         }
-        Collection collection=new Collection();
+
+        //获取该用户对该菜谱的收藏
+        Collection collection;
         try{
+            if(isCollect.equals(0)){
+                QueryWrapper<Collection> collectionQueryWrapper=new QueryWrapper<>();
+                collectionQueryWrapper.eq("user_id",userId);
+                collectionQueryWrapper.eq("cookbook_id",cookbookId);
+                collectionService.remove(collectionQueryWrapper);
+                return CommonResult.success("取消菜谱收藏");
+            }
+            collection=new Collection();
             collection.setUserId(userId);
             collection.setCookbookId(cookbookId);
             collectionService.save(collection);
         }catch (Exception e){
-            log.error("菜谱收藏失败");
-            return CommonResult.fail("菜谱收藏失败");
+            log.error("菜谱修改收藏状态失败");
+            return CommonResult.fail("菜谱修改收藏状态失败");
         }
-        return CommonResult.success("菜谱收藏成功");
+        return CommonResult.success("成功收藏菜谱");
     }
 
     @Override
-    public CommonResult<BlankRes> delectCollectCookbook(Integer cookbookId) {
+    public CommonResult<CookbookCollectRes> getCollect(Integer cookbookId) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -202,19 +213,24 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
             return CommonResult.fail("用户不存在");
         }
-        Collection collection=new Collection();
+
+        CookbookCollectRes cookbookCollectRes=new CookbookCollectRes();
         try{
-            collection.setUserId(userId);
-            collection.setCookbookId(cookbookId);
-            QueryWrapper<Collection> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("user_id",userId);
-            queryWrapper.eq("cookbook_id",cookbookId);
-            collectionService.remove(queryWrapper);
+            Collection collection;
+            QueryWrapper<Collection> collectionQueryWrapper=new QueryWrapper<>();
+            collectionQueryWrapper.eq("user_id",userId);
+            collectionQueryWrapper.eq("cookbook_id",cookbookId);
+            collection=collectionService.getOne(collectionQueryWrapper);
+            if(collection!=null){
+                cookbookCollectRes.setIsCollect(0);
+                return CommonResult.success("查找收藏状态成功",cookbookCollectRes);
+            }
+            cookbookCollectRes.setIsCollect(1);
         }catch (Exception e){
-            log.error("菜谱删除收藏失败");
-            return CommonResult.fail("菜谱删除收藏失败");
+            log.error("查找收藏状态失败");
+            return CommonResult.fail("查找收藏状态失败");
         }
-        return CommonResult.success("菜谱删除收藏成功");
+        return CommonResult.success("查找收藏状态成功",cookbookCollectRes);
     }
 
     @Override
@@ -252,6 +268,8 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
         }
         return CommonResult.success("成功上传图片");
     }
+
+
 
 
     @Service

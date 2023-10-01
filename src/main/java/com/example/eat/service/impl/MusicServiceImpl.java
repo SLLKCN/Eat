@@ -13,6 +13,7 @@ import com.example.eat.model.dto.param.Music.PostMusic;
 import com.example.eat.model.dto.param.Music.PostMusicInMusicList;
 import com.example.eat.model.dto.param.Music.PostMusicList;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.music.MusicFavouriteRes;
 import com.example.eat.model.dto.res.music.MusicGetRes;
 import com.example.eat.model.dto.res.music.MusicListsGetRes;
 import com.example.eat.model.po.music.Favourite;
@@ -69,6 +70,10 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             }
 
             QueryWrapper<Music> musicQueryWrapper=new QueryWrapper<>();
+            if(musicId.size()==0){
+                musicGetRes=new MusicGetRes(new ArrayList<>());
+                return CommonResult.success("查询喜欢歌曲成功",musicGetRes);
+            }
             musicQueryWrapper.in("id",musicId);
 
             musicGetRes=new MusicGetRes(this.getBaseMapper().selectList(musicQueryWrapper));
@@ -105,7 +110,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
     }
 
     @Override
-    public CommonResult<MusicGetRes> getMusic(int musicListId) {
+    public CommonResult<MusicGetRes> getMusic(Integer musicListId) {
         MusicGetRes musicGetRes;
         try{
             QueryWrapper<MusicInList> musicInListQueryWrapper=new QueryWrapper<>();
@@ -130,7 +135,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
     }
 
     @Override
-    public CommonResult<BlankRes> favouriteMusic(int musicId) {
+    public CommonResult<BlankRes> favouriteMusic(Integer isFavourite,Integer musicId) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -139,20 +144,28 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
             return CommonResult.fail("用户不存在");
         }
+
         try {
+            if(isFavourite.equals(0)){
+                QueryWrapper<Favourite> favouriteQueryWrapper=new QueryWrapper<>();
+                favouriteQueryWrapper.eq("user_id",userId);
+                favouriteQueryWrapper.eq("music_id",musicId);
+                favouriteDao.delete(favouriteQueryWrapper);
+                return CommonResult.success("取消音乐喜欢");
+            }
             Favourite favourite=new Favourite();
             favourite.setUserId(userId);
             favourite.setMusicId(musicId);
             favouriteDao.insert(favourite);
         }catch (Exception e){
             e.printStackTrace();
-            return CommonResult.fail("喜欢音乐失败");
+            return CommonResult.fail("修改音乐喜欢状态失败");
         }
-        return CommonResult.success("喜欢音乐成功");
+        return CommonResult.success("喜欢音乐");
     }
 
     @Override
-    public CommonResult<BlankRes> cancelFavouriteMusic(int musicId) {
+    public CommonResult<MusicFavouriteRes> getFavourite(Integer musicId) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -161,25 +174,26 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
             return CommonResult.fail("用户不存在");
         }
+
+        MusicFavouriteRes musicFavouriteRes=new MusicFavouriteRes();
         try{
             QueryWrapper<Favourite> favouriteQueryWrapper=new QueryWrapper<>();
-            favouriteQueryWrapper.eq("music_id",musicId);
             favouriteQueryWrapper.eq("user_id",userId);
+            favouriteQueryWrapper.eq("music_id",musicId);
             Favourite favourite=favouriteDao.selectOne(favouriteQueryWrapper);
-            if(favourite==null){
-                return CommonResult.fail("未找到该歌曲或未喜欢该歌曲");
+            if(favourite!=null){
+                musicFavouriteRes.setIsFavourite(0);
+                return CommonResult.success("获取音乐喜欢状态成功",musicFavouriteRes);
             }
+            musicFavouriteRes.setIsFavourite(1);
         }catch (Exception e){
             e.printStackTrace();
-            return CommonResult.fail("取消喜欢歌曲失败");
+            return CommonResult.fail("获取音乐喜欢状态失败");
         }
-        return CommonResult.success("取消喜欢歌曲成功");
+        return CommonResult.success("获取音乐喜欢状态成功",musicFavouriteRes);
+
+
     }
-
-
-
-
-
 
 
     @Override
@@ -310,4 +324,6 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
         }
         return CommonResult.success("歌单添加歌曲成功");
     }
+
+
 }

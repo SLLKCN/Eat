@@ -6,6 +6,7 @@ import com.example.eat.model.dto.param.Music.PostMusic;
 import com.example.eat.model.dto.param.Music.PostMusicInMusicList;
 import com.example.eat.model.dto.param.Music.PostMusicList;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.music.MusicFavouriteRes;
 import com.example.eat.model.dto.res.music.MusicGetRes;
 import com.example.eat.model.dto.res.music.MusicListsGetRes;
 import com.example.eat.service.MusicService;
@@ -34,13 +35,14 @@ public class MusicController {
     CommonResult<MusicGetRes> getMusic(@PathVariable("musicListId")@NotBlank(message = "歌单id不能为空") String musicListId){
         return musicService.getMusic(Integer.parseInt(musicListId));
     }
-    @PutMapping("/user/favourite/{musicId}")
-    CommonResult<BlankRes> favouriteMusic(@PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
-        return musicService.favouriteMusic(Integer.parseInt(musicId));
+    @PutMapping("/music/{musicId}/favourite")
+    CommonResult<BlankRes> favouriteMusic(@RequestParam("isFavourite") Integer isFavourite,
+                                          @PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
+        return musicService.favouriteMusic(isFavourite,Integer.parseInt(musicId));
     }
-    @DeleteMapping("/user/favourite/{musicId}")
-    CommonResult<BlankRes> cancelFavouriteMusic(@PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
-        return musicService.cancelFavouriteMusic(Integer.parseInt(musicId));
+    @GetMapping("/music/{musicId}/favourite")
+    CommonResult<MusicFavouriteRes> getFavourite(@PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
+        return musicService.getFavourite(Integer.parseInt(musicId));
     }
 
 

@@ -6,6 +6,7 @@ import com.example.eat.model.dto.param.Music.PostMusic;
 import com.example.eat.model.dto.param.Music.PostMusicInMusicList;
 import com.example.eat.model.dto.param.Music.PostMusicList;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.music.MusicFavouriteRes;
 import com.example.eat.model.dto.res.music.MusicGetRes;
 import com.example.eat.model.dto.res.music.MusicListsGetRes;
 import com.example.eat.model.po.music.Music;
@@ -16,11 +17,10 @@ public interface MusicService extends IService<Music> {
 
     CommonResult<MusicListsGetRes> getMusicList(Integer pageNum, Integer pageSize);
 
-    CommonResult<MusicGetRes> getMusic(int musicListId);
+    CommonResult<MusicGetRes> getMusic(Integer musicListId);
 
-    CommonResult<BlankRes> favouriteMusic(int musicId);
+    CommonResult<BlankRes> favouriteMusic(Integer isFavourite,Integer musicId);
 
-    CommonResult<BlankRes> cancelFavouriteMusic(int parseInt);
 
     CommonResult<BlankRes> addMusic(PostMusic postMusic);
 
@@ -37,4 +37,6 @@ public interface MusicService extends IService<Music> {
     CommonResult<BlankRes> insertMusicListImage(Integer musiclistId, MultipartFile file);
 
     CommonResult<BlankRes> addMusicInMusicList(PostMusicInMusicList postMusicInMusicList);
+
+    CommonResult<MusicFavouriteRes> getFavourite(Integer musicId);
 }

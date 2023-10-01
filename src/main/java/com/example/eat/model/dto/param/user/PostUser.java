@@ -1,4 +1,4 @@
-package com.example.eat.model.dto.param;
+package com.example.eat.model.dto.param.user;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

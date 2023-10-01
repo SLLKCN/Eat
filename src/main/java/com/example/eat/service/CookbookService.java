@@ -2,8 +2,9 @@ package com.example.eat.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.eat.model.dto.CommonResult;
-import com.example.eat.model.dto.param.PostCookbook;
+import com.example.eat.model.dto.param.cookbook.PostCookbook;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.cookbook.CookbookCollectRes;
 import com.example.eat.model.dto.res.cookbook.CookbooksGetRes;
 import com.example.eat.model.po.cookbook.Cookbook;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,11 +19,12 @@ public interface CookbookService extends IService<Cookbook> {
 
     CommonResult<CookbooksGetRes> searchCookbooks(Integer pageNum, Integer pageSize, String keyword);
 
-    CommonResult<BlankRes> collectCookbook(Integer cookbookId);
+    CommonResult<BlankRes> collectCookbook(Integer isCollect,Integer cookbookId);
 
-    CommonResult<BlankRes> delectCollectCookbook(Integer cookbookId);
 
     CommonResult<BlankRes> addCookbook(PostCookbook postCookbook);
 
     CommonResult<BlankRes> insertImage(Integer cookbookid,MultipartFile file);
+
+    CommonResult<CookbookCollectRes> getCollect(Integer cookbookId);
 }

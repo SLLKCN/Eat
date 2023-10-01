@@ -14,7 +14,7 @@ import lombok.Data;
 public class PostLike {
     @TableId(type = IdType.AUTO)
     private Integer id;
-    private String userId;
+    private Integer userId;
     private Integer postId;
 
 }

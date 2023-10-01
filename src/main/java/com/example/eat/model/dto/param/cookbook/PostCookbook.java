@@ -1,4 +1,4 @@
-package com.example.eat.model.dto.param;
+package com.example.eat.model.dto.param.cookbook;
 
 import lombok.Data;
 

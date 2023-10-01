@@ -2,8 +2,9 @@ package com.example.eat.controller;
 
 import com.example.eat.aop.Pass;
 import com.example.eat.model.dto.CommonResult;
-import com.example.eat.model.dto.param.PostCookbook;
+import com.example.eat.model.dto.param.cookbook.PostCookbook;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.cookbook.CookbookCollectRes;
 import com.example.eat.model.dto.res.cookbook.CookbooksGetRes;
 import com.example.eat.service.CookbookService;
 import jakarta.validation.constraints.NotBlank;
@@ -43,17 +44,19 @@ public class CookbookController {
                                                   @RequestParam(required = false) @Size(max = 30,message = "搜索关键词过长") String keyword){
         return cookbookService.searchCookbooks(pageNum,pageSize,keyword);
     }
-    @PutMapping("/user/collect/{cookbookId}")
-    CommonResult<BlankRes> collectCookbook(@PathVariable("cookbookId")@NotBlank(message = "收藏菜谱不能为空") String cookbookId){
-        System.out.println("1");
+    @PutMapping("/cookbooks/{cookbookId}/collect")
+    CommonResult<BlankRes> collectCookbook(@RequestParam("isCollect") Integer isCollect,
+                                           @PathVariable("cookbookId")@NotBlank(message = "菜谱号不能为空") String cookbookId){
         log.info("收藏菜谱号:{}",cookbookId);
-        return cookbookService.collectCookbook(Integer.parseInt(cookbookId));
+        return cookbookService.collectCookbook(isCollect,Integer.parseInt(cookbookId));
     }
-    @DeleteMapping("/user/collect/{cookbookId}")
-    CommonResult<BlankRes> delectCollectCookbook(@PathVariable("cookbookId")@NotBlank(message = "收藏菜谱不能为空") String cookbookId){
 
-        return cookbookService.delectCollectCookbook(Integer.parseInt(cookbookId));
+    @GetMapping("/cookbooks/{cookbookId}/collect")
+    CommonResult<CookbookCollectRes> getCollect(@PathVariable("cookbookId")@NotBlank(message = "菜谱号不能为空") String cookbookId){
+        return cookbookService.getCollect(Integer.parseInt(cookbookId));
     }
+
+
     @Pass
     @PostMapping("/cookbook")
     CommonResult<BlankRes> addCookbook(@RequestBody PostCookbook postCookbook){
