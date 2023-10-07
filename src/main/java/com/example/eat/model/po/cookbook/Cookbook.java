@@ -16,4 +16,5 @@ public class Cookbook {
     private String content;
     private String type;
     private String image;
+    private Integer collectCount;
 }

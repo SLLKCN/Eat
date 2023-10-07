@@ -19,7 +19,7 @@ public interface CookbookService extends IService<Cookbook> {
 
     CommonResult<CookbooksGetRes> searchCookbooks(Integer pageNum, Integer pageSize, String keyword);
 
-    CommonResult<BlankRes> collectCookbook(Integer isCollect,Integer cookbookId);
+    CommonResult<BlankRes> collectCookbook(Integer cookbookId);
 
 
     CommonResult<BlankRes> addCookbook(PostCookbook postCookbook);

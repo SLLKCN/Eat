@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Slf4j
-@CrossOrigin
 public class UserController {
     @Autowired
     MinioUtil minioUtil;
@@ -44,5 +43,13 @@ public class UserController {
     @GetMapping("/users/my")
     CommonResult<UserRes> getMyUserInfo(){
         return userService.getMyUserInfo();
+    }
+    @PutMapping("/user/my/status")
+    CommonResult<BlankRes> updateUserStatus(@NotNull(message = "status不能为空") @RequestParam("status") String status){
+        return userService.updateUserStatus(status);
+    }
+    @PutMapping("/user/my/signature")
+    CommonResult<BlankRes> updateUserSignature(@NotNull(message = "signature不能为空") @RequestParam("signature") String signature){
+        return userService.updateUserSignature(signature);
     }
 }

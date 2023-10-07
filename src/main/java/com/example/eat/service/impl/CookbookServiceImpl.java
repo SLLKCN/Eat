@@ -172,7 +172,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
     }
 
     @Override
-    public CommonResult<BlankRes> collectCookbook(Integer isCollect,Integer cookbookId) {
+    public CommonResult<BlankRes> collectCookbook(Integer cookbookId) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -182,26 +182,52 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             return CommonResult.fail("用户不存在");
         }
 
-        //获取该用户对该菜谱的收藏
-        Collection collection;
+
+
+
         try{
-            if(isCollect.equals(0)){
+            Integer isCollect=checkCollect(userId,cookbookId);
+            //查看该菜谱是否存在
+            Cookbook cookbook=this.getById(cookbookId);
+            if(cookbook==null){
+                return CommonResult.fail("菜谱不存在");
+            }
+
+
+            if(isCollect.equals(1)){
                 QueryWrapper<Collection> collectionQueryWrapper=new QueryWrapper<>();
                 collectionQueryWrapper.eq("user_id",userId);
                 collectionQueryWrapper.eq("cookbook_id",cookbookId);
                 collectionService.remove(collectionQueryWrapper);
+
+                //收藏数减一
+                cookbook.setCollectCount(cookbook.getCollectCount()-1);
+                this.updateById(cookbook);
+                //检查收藏数
+                if(cookbook.getCollectCount()<0){
+                    return CommonResult.fail("菜谱收藏数异常");
+                }
+
                 return CommonResult.success("取消菜谱收藏");
             }
+            Collection collection;
             collection=new Collection();
             collection.setUserId(userId);
             collection.setCookbookId(cookbookId);
             collectionService.save(collection);
+
+            //收藏数加一
+            cookbook.setCollectCount(cookbook.getCollectCount()+1);
+            this.updateById(cookbook);
+
         }catch (Exception e){
             log.error("菜谱修改收藏状态失败");
             return CommonResult.fail("菜谱修改收藏状态失败");
         }
         return CommonResult.success("成功收藏菜谱");
     }
+
+
 
     @Override
     public CommonResult<CookbookCollectRes> getCollect(Integer cookbookId) {
@@ -216,16 +242,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
 
         CookbookCollectRes cookbookCollectRes=new CookbookCollectRes();
         try{
-            Collection collection;
-            QueryWrapper<Collection> collectionQueryWrapper=new QueryWrapper<>();
-            collectionQueryWrapper.eq("user_id",userId);
-            collectionQueryWrapper.eq("cookbook_id",cookbookId);
-            collection=collectionService.getOne(collectionQueryWrapper);
-            if(collection!=null){
-                cookbookCollectRes.setIsCollect(0);
-                return CommonResult.success("查找收藏状态成功",cookbookCollectRes);
-            }
-            cookbookCollectRes.setIsCollect(1);
+            cookbookCollectRes.setIsCollect(checkCollect(userId,cookbookId));
         }catch (Exception e){
             log.error("查找收藏状态失败");
             return CommonResult.fail("查找收藏状态失败");
@@ -241,6 +258,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             cookbook.setType(postCookbook.getType());
             cookbook.setName(postCookbook.getName());
             cookbook.setIntroduction(postCookbook.getIntroduction());
+            cookbook.setCollectCount(0);
             this.save(cookbook);
         }catch (Exception e){
             return CommonResult.fail("上传菜谱失败");
@@ -269,6 +287,23 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
         return CommonResult.success("成功上传图片");
     }
 
+    //检查菜单是否被收藏
+    private Integer checkCollect(Integer userId, Integer cookbookId) {
+        try{
+            Collection collection;
+            QueryWrapper<Collection> collectionQueryWrapper=new QueryWrapper<>();
+            collectionQueryWrapper.eq("user_id",userId);
+            collectionQueryWrapper.eq("cookbook_id",cookbookId);
+            collection=collectionService.getOne(collectionQueryWrapper);
+            if(collection!=null){
+                return 0;
+            }
+            return 1;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 
 

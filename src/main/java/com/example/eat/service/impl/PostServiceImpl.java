@@ -17,12 +17,15 @@ import com.example.eat.model.dto.res.post.PostCommentsGetRes;
 import com.example.eat.model.dto.res.post.PostLikeStatusRes;
 import com.example.eat.model.dto.res.post.PostRes;
 import com.example.eat.model.dto.res.post.PostsGetRes;
+import com.example.eat.model.dto.res.user.UserRes;
 import com.example.eat.model.po.post.Post;
 import com.example.eat.model.po.post.PostComment;
 import com.example.eat.model.po.post.PostImage;
 import com.example.eat.model.po.post.PostLike;
 import com.example.eat.service.PostService;
+import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
+import com.example.eat.util.MinioUtil;
 import com.example.eat.util.TokenThreadLocalUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +43,9 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
     PostImageDao postImageDao;
     @Autowired
     PostLikeDao postLikeDao;
+    @Autowired
+    MinioUtil minioUtil;
+    UserServiceImpl userService;
     @Override
     public CommonResult<BlankRes> addPost(PostCreateDto postCreateDto) {
         Integer userId;
@@ -54,6 +60,7 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         Post post=new Post();
         try{
             post.setUserId(userId);
+            post.setTitle(postCreateDto.getTitle());
             post.setContent(postCreateDto.getContent());
             post.setLikeCount(0);
             post.setCommentCount(0);
@@ -96,7 +103,23 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             if(!post.getUserId().equals(userId)){
                 return CommonResult.fail("并非该用户帖子，无权删除");
             }
-            this.deletePost(postId);
+
+            //删除帖子图片
+            QueryWrapper<PostImage> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("post_id", postId);
+            //minio删除帖子图片
+            List<PostImage> postImages = postImageDao.selectList(queryWrapper);
+            for (PostImage postImage : postImages) {
+                minioUtil.removeObject(postImage.getImage());
+            }
+
+
+
+            this.removeById(postId);
+
+
+
+
         }catch(Exception e){
             e.printStackTrace();
             return CommonResult.fail("删除帖子失败");
@@ -204,12 +227,25 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             return CommonResult.fail("用户不存在");
         }
 
+
+
+
         try{
+            //判断是否存在该帖子
+            Post post=this.getById(postCommentCreateDto.getPostId());
+            if(post==null){
+                return CommonResult.fail("该帖子不存在");
+            }
+
             PostComment postComment=new PostComment();
             postComment.setUserId(userId);
             postComment.setPostId(postCommentCreateDto.getPostId());
             postComment.setContent(postCommentCreateDto.getContent());
             postCommentDao.insert(postComment);
+
+            //评论数加一
+            post.setCommentCount(post.getCommentCount()+1);
+            this.updateById(post);
         }catch(Exception e){
             e.printStackTrace();
             return CommonResult.fail("添加帖子评论失败");
@@ -269,7 +305,7 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
     }
 
     @Override
-    public CommonResult<BlankRes> likePost(Integer isLike, Integer postId) {
+    public CommonResult<BlankRes> likePost(Integer postId) {
         Integer userId;
         try {
             userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
@@ -279,17 +315,39 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         }
 
         try{
-            if(isLike.equals(0)){
+            Integer isLike=checkLike(userId,postId);
+            //判断是否存在该帖子
+            Post post=this.getById(postId);
+            if(post==null){
+                return CommonResult.fail("该帖子不存在");
+            }
+
+            if(isLike.equals(1)){
                 QueryWrapper<PostLike> postLikeQueryWrapper=new QueryWrapper<>();
                 postLikeQueryWrapper.eq("post_id",postId);
                 postLikeQueryWrapper.eq("user_id",userId);
                 postLikeDao.delete(postLikeQueryWrapper);
+
+                //点赞数减一
+                post.setLikeCount(post.getLikeCount()-1);
+                this.updateById(post);
+                //检查帖子点赞数是否正常
+                if (post.getLikeCount()<0){
+                    return CommonResult.fail("帖子点赞数异常");
+                }
+
                 return CommonResult.success("删除帖子点赞成功");
             }
             PostLike postLike=new PostLike();
             postLike.setPostId(postId);
             postLike.setUserId(userId);
             postLikeDao.insert(postLike);
+
+            //点赞数加一
+            post.setLikeCount(post.getLikeCount()+1);
+            this.updateById(post);
+
+
         }catch(Exception e){
             e.printStackTrace();
             return CommonResult.fail("修改帖子点赞状态失败");
@@ -309,21 +367,12 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
 
         PostLikeStatusRes postLikeStatusRes=new PostLikeStatusRes();
         try{
-            QueryWrapper<PostLike> postLikeQueryWrapper=new QueryWrapper<>();
-            postLikeQueryWrapper.eq("post_id",postId);
-            postLikeQueryWrapper.eq("user_id",userId);
-            PostLike postLike=postLikeDao.selectOne(postLikeQueryWrapper);
-            if(postLike==null){
-                postLikeStatusRes.setIsLike(0);
-                return CommonResult.success("查看帖子点赞状态失败",postLikeStatusRes);
-            }
-            postLikeStatusRes.setIsLike(1);
-
+            postLikeStatusRes.setIsLike(checkLike(userId,postId));
         }catch(Exception e){
             e.printStackTrace();
             return CommonResult.fail("查看帖子点赞状态失败");
         }
-        return CommonResult.success("查看帖子点赞状态失败",postLikeStatusRes);
+        return CommonResult.success("查看帖子点赞状态成功",postLikeStatusRes);
     }
 
 
@@ -335,7 +384,8 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             QueryWrapper<PostImage> postImageQueryWrapper=new QueryWrapper<>();
             postImageQueryWrapper.eq("post_id",postId);
             List<PostImage> postImageList=postImageDao.selectList(postImageQueryWrapper);
-            postRes=new PostRes(post,postImageList);
+            UserRes userRes=userService.getUserResById(post.getUserId());
+            postRes=new PostRes(post,postImageList,userRes);
         }catch(Exception e){
             e.printStackTrace();
             return null;
@@ -364,5 +414,21 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             return null;
         }
         return postsGetRes;
+    }
+    //查看该用户是否点赞该帖子
+    public Integer checkLike(Integer userId,Integer postId){
+        try{
+            QueryWrapper<PostLike> postLikeQueryWrapper=new QueryWrapper<>();
+            postLikeQueryWrapper.eq("post_id",postId);
+            postLikeQueryWrapper.eq("user_id",userId);
+            PostLike postLike=postLikeDao.selectOne(postLikeQueryWrapper);
+            if(postLike==null){
+                return 0;
+            }
+            return 1;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 }

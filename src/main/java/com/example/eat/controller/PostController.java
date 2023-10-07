@@ -67,9 +67,8 @@ public class PostController {
     }
 
     @PutMapping("/posts/{postId}/like")
-    CommonResult<BlankRes> likePost(@RequestParam("isLike") Integer isLike,
-                                    @PathVariable("postId")@NotBlank(message = "帖子id不能为空") String postId){
-        return postService.likePost(isLike,Integer.parseInt(postId));
+    CommonResult<BlankRes> likePost(@PathVariable("postId")@NotBlank(message = "帖子id不能为空") String postId){
+        return postService.likePost(Integer.parseInt(postId));
     }
     @GetMapping("/posts/{postId}/like")
     CommonResult<PostLikeStatusRes> getLike(@PathVariable("postId")@NotBlank(message = "帖子id不能为空") String postId){

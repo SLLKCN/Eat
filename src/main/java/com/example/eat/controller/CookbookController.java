@@ -45,10 +45,9 @@ public class CookbookController {
         return cookbookService.searchCookbooks(pageNum,pageSize,keyword);
     }
     @PutMapping("/cookbooks/{cookbookId}/collect")
-    CommonResult<BlankRes> collectCookbook(@RequestParam("isCollect") Integer isCollect,
-                                           @PathVariable("cookbookId")@NotBlank(message = "菜谱号不能为空") String cookbookId){
+    CommonResult<BlankRes> collectCookbook(@PathVariable("cookbookId")@NotBlank(message = "菜谱号不能为空") String cookbookId){
         log.info("收藏菜谱号:{}",cookbookId);
-        return cookbookService.collectCookbook(isCollect,Integer.parseInt(cookbookId));
+        return cookbookService.collectCookbook(Integer.parseInt(cookbookId));
     }
 
     @GetMapping("/cookbooks/{cookbookId}/collect")

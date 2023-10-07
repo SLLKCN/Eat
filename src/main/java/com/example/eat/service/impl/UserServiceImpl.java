@@ -89,12 +89,17 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
             user.setId(userId);
             user.setNickname(putUser.getNickname());
             user.setAvatar(putUser.getAvatar());
+            user.setSex(putUser.getSex());
+            user.setAge(putUser.getAge());
+            user.setHeight(putUser.getHeight());
+            user.setWeight(putUser.getWeight());
+            user.setIdentity(putUser.getIdentity());
+            user.setDisease(putUser.getDisease());
             this.updateById(user);
         }catch (Exception e){
             log.error("更新用户信息失败");
             return CommonResult.fail("更新用户信息失败");
         }
-        this.getById(userId);
         return CommonResult.success("更新用户信息成功");
     }
 
@@ -110,8 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         }
         UserRes userRes;
         try{
-            User user=this.getById(userGetId);
-            userRes=new UserRes(user);
+            userRes=getUserResById(userGetId);
         }catch (Exception e){
             log.error("查找指定用户信息失败");
             return CommonResult.fail("查找指定用户信息失败");
@@ -131,8 +135,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         }
         UserRes userRes;
         try{
-            User user=this.getById(userId);
-            userRes=new UserRes(user);
+            userRes=getUserResById(userId);
         }catch (Exception e){
             log.error("查找我的用户信息失败");
             return CommonResult.fail("查找我的用户信息失败");
@@ -140,5 +143,62 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         return CommonResult.success("查找我的用户信息成功",userRes);
     }
 
+    @Override
+    public CommonResult<BlankRes> updateUserStatus(String status) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
 
+        try{
+            User user=new User();
+            user.setId(userId);
+            user.setStatus(status);
+            this.updateById(user);
+        }catch (Exception e){
+            log.error("更新用户信息失败");
+            return CommonResult.fail("更新用户信息失败");
+        }
+        return CommonResult.success("更新用户信息成功");
+    }
+
+    @Override
+    public CommonResult<BlankRes> updateUserSignature(String signature) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+
+        try{
+            User user=new User();
+            user.setId(userId);
+            user.setSignature(signature);
+            this.updateById(user);
+        }catch (Exception e){
+            log.error("更新用户信息失败");
+            return CommonResult.fail("更新用户信息失败");
+        }
+        return CommonResult.success("更新用户信息成功");
+    }
+
+    public UserRes getUserResById(Integer userId){
+        UserRes userRes;
+        try {
+            User user=this.getById(userId);
+            userRes=new UserRes(user);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+
+        return userRes;
+    }
 }

@@ -14,4 +14,5 @@ public class Music {
     private String introduction;
     private String image;
     private String music;
+    private Integer favouriteCount;
 }

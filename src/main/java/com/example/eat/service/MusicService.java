@@ -19,7 +19,7 @@ public interface MusicService extends IService<Music> {
 
     CommonResult<MusicGetRes> getMusic(Integer musicListId);
 
-    CommonResult<BlankRes> favouriteMusic(Integer isFavourite,Integer musicId);
+    CommonResult<BlankRes> favouriteMusic(Integer musicId);
 
 
     CommonResult<BlankRes> addMusic(PostMusic postMusic);
@@ -39,4 +39,6 @@ public interface MusicService extends IService<Music> {
     CommonResult<BlankRes> addMusicInMusicList(PostMusicInMusicList postMusicInMusicList);
 
     CommonResult<MusicFavouriteRes> getFavourite(Integer musicId);
+
+    CommonResult<BlankRes> clickMusic(Integer musicId);
 }

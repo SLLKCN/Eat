@@ -18,4 +18,8 @@ public interface UserService extends IService<User> {
     CommonResult<UserRes> getOnesUserInfo(Integer userGetId);
 
     CommonResult<UserRes> getMyUserInfo();
+
+    CommonResult<BlankRes> updateUserStatus(String status);
+
+    CommonResult<BlankRes> updateUserSignature(String signature);
 }

@@ -14,5 +14,12 @@ public class User {
     private String nickname;
     private String password;
     private String avatar;
-
+    private Integer sex;
+    private Integer age;
+    private Double height;
+    private Double weight;
+    private String identity;
+    private String disease;
+    private String signature;
+    private String status;
 }

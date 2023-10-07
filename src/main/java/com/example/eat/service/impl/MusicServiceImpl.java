@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.eat.dao.music.FavouriteDao;
-import com.example.eat.dao.music.MusicDao;
-import com.example.eat.dao.music.MusicInListDao;
-import com.example.eat.dao.music.MusicListDao;
+import com.example.eat.dao.music.*;
 import com.example.eat.model.dto.CommonResult;
 import com.example.eat.model.dto.param.Music.PostMusic;
 import com.example.eat.model.dto.param.Music.PostMusicInMusicList;
@@ -16,10 +13,7 @@ import com.example.eat.model.dto.res.BlankRes;
 import com.example.eat.model.dto.res.music.MusicFavouriteRes;
 import com.example.eat.model.dto.res.music.MusicGetRes;
 import com.example.eat.model.dto.res.music.MusicListsGetRes;
-import com.example.eat.model.po.music.Favourite;
-import com.example.eat.model.po.music.Music;
-import com.example.eat.model.po.music.MusicInList;
-import com.example.eat.model.po.music.MusicList;
+import com.example.eat.model.po.music.*;
 import com.example.eat.service.MusicService;
 import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
@@ -46,6 +40,8 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
     MusicListDao musicListDao;
     @Autowired
     UserService userService;
+    @Autowired
+    MusicScoreDao musicScoreDao;
 
     @Override
     public CommonResult<MusicGetRes> getFavouriteMusic() {
@@ -77,7 +73,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             musicQueryWrapper.in("id",musicId);
 
             musicGetRes=new MusicGetRes(this.getBaseMapper().selectList(musicQueryWrapper));
-
+            musicGetRes.setTotal(this.getBaseMapper().selectCount(musicQueryWrapper));
         }catch (Exception e){
             e.printStackTrace();
             return CommonResult.fail("查询喜欢歌曲失败");
@@ -100,8 +96,9 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             Page<MusicList> musicListPage = new Page<>(pageNum, pageSize);
             QueryWrapper<MusicList> musicListQueryWrapper=new QueryWrapper<>();
             IPage<MusicList> musicListIPage=musicListDao.selectPage(musicListPage,musicListQueryWrapper);
-            List<MusicList> musicListList=musicListPage.getRecords();
+            List<MusicList> musicListList=musicListIPage.getRecords();
             musicListsGetRes=new MusicListsGetRes(musicListList);
+            musicListsGetRes.setTotal(musicListIPage.getTotal());
         }catch (Exception e){
             e.printStackTrace();
             return CommonResult.fail("查询歌单失败");
@@ -126,7 +123,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             musicQueryWrapper.in("id",musicId);
 
             musicGetRes=new MusicGetRes(this.getBaseMapper().selectList(musicQueryWrapper));
-
+            musicGetRes.setTotal(this.getBaseMapper().selectCount(musicQueryWrapper));
         }catch (Exception e){
             e.printStackTrace();
             return CommonResult.fail("查询音乐失败");
@@ -135,7 +132,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
     }
 
     @Override
-    public CommonResult<BlankRes> favouriteMusic(Integer isFavourite,Integer musicId) {
+    public CommonResult<BlankRes> favouriteMusic(Integer musicId) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -145,18 +142,42 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             return CommonResult.fail("用户不存在");
         }
 
+
+
+
         try {
-            if(isFavourite.equals(0)){
+            Integer isFavourite=checkFavourite(userId,musicId);
+            //判断音乐是否存在
+            Music music=this.getById(musicId);
+            if(music==null){
+                return CommonResult.fail("未找到该音乐");
+            }
+
+            if(isFavourite.equals(1)){
                 QueryWrapper<Favourite> favouriteQueryWrapper=new QueryWrapper<>();
                 favouriteQueryWrapper.eq("user_id",userId);
                 favouriteQueryWrapper.eq("music_id",musicId);
                 favouriteDao.delete(favouriteQueryWrapper);
+
+                //喜欢数减一
+                music.setFavouriteCount(music.getFavouriteCount()-1);
+                this.updateById(music);
+                //判断喜欢数是否小于0
+                if(music.getFavouriteCount()<0){
+                    return CommonResult.fail("音乐喜欢数异常");
+                }
+
                 return CommonResult.success("取消音乐喜欢");
             }
             Favourite favourite=new Favourite();
             favourite.setUserId(userId);
             favourite.setMusicId(musicId);
             favouriteDao.insert(favourite);
+            //喜欢数加一
+            music.setFavouriteCount(music.getFavouriteCount()+1);
+            this.updateById(music);
+
+
         }catch (Exception e){
             e.printStackTrace();
             return CommonResult.fail("修改音乐喜欢状态失败");
@@ -167,25 +188,18 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
     @Override
     public CommonResult<MusicFavouriteRes> getFavourite(Integer musicId) {
         //判断是否存在该用户
-        Integer userId;
+        Integer userId=null;
         try {
             userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
         } catch (Exception e) {
-            log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
+            log.warn("用户不存在");
             return CommonResult.fail("用户不存在");
         }
 
         MusicFavouriteRes musicFavouriteRes=new MusicFavouriteRes();
         try{
-            QueryWrapper<Favourite> favouriteQueryWrapper=new QueryWrapper<>();
-            favouriteQueryWrapper.eq("user_id",userId);
-            favouriteQueryWrapper.eq("music_id",musicId);
-            Favourite favourite=favouriteDao.selectOne(favouriteQueryWrapper);
-            if(favourite!=null){
-                musicFavouriteRes.setIsFavourite(0);
-                return CommonResult.success("获取音乐喜欢状态成功",musicFavouriteRes);
-            }
-            musicFavouriteRes.setIsFavourite(1);
+            musicFavouriteRes.setIsFavourite(checkFavourite(userId,musicId));
+
         }catch (Exception e){
             e.printStackTrace();
             return CommonResult.fail("获取音乐喜欢状态失败");
@@ -195,6 +209,37 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
 
     }
 
+    @Override
+    public CommonResult<BlankRes> clickMusic(Integer musicId) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+        try{
+            QueryWrapper<MusicScore> musicScoreQueryWrapper=new QueryWrapper<>();
+            musicScoreQueryWrapper.eq("user_id",userId);
+            musicScoreQueryWrapper.eq("music_id",musicId);
+            MusicScore musicScore=musicScoreDao.selectOne(musicScoreQueryWrapper);
+            if(musicScore==null){
+                musicScore.setUserId(userId);
+                musicScore.setMusicId(musicId);
+                musicScore.setScore(1);
+                musicScoreDao.insert(musicScore);
+                return CommonResult.success("点击成功");
+            }
+            musicScore.setScore(musicScore.getScore()+1);
+            musicScoreDao.updateById(musicScore);
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("点击失败");
+        }
+        return CommonResult.success("点击成功");
+    }
+
 
     @Override
     public CommonResult<BlankRes> addMusic(PostMusic postMusic) {
@@ -202,6 +247,7 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
             Music music=new Music();
             music.setName(postMusic.getName());
             music.setIntroduction(postMusic.getIntroduction());
+            music.setFavouriteCount(0);
             this.save(music);
         }catch (Exception e){
             e.printStackTrace();
@@ -325,5 +371,20 @@ public class MusicServiceImpl extends ServiceImpl<MusicDao, Music> implements Mu
         return CommonResult.success("歌单添加歌曲成功");
     }
 
-
+    //查看歌曲是否被喜欢
+    public Integer checkFavourite(Integer userId,Integer musicId){
+        try{
+            QueryWrapper<Favourite> favouriteQueryWrapper=new QueryWrapper<>();
+            favouriteQueryWrapper.eq("user_id",userId);
+            favouriteQueryWrapper.eq("music_id",musicId);
+            Favourite favourite=favouriteDao.selectOne(favouriteQueryWrapper);
+            if(favourite!=null){
+                return 0;
+            }
+            return 1;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

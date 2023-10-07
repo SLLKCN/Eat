@@ -6,12 +6,13 @@ import lombok.Data;
 @Data
 public class MusicRes {
     MusicRes(Music music){
+        this.id=music.getId();
         this.name=music.getName();
         this.introduction=music.getIntroduction();
         this.image= music.getImage();
         this.music=music.getMusic();
     }
-
+    private Integer id;
     private String name;
     private String introduction;
     private String image;

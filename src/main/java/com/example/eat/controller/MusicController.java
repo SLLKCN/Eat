@@ -36,14 +36,22 @@ public class MusicController {
         return musicService.getMusic(Integer.parseInt(musicListId));
     }
     @PutMapping("/music/{musicId}/favourite")
-    CommonResult<BlankRes> favouriteMusic(@RequestParam("isFavourite") Integer isFavourite,
-                                          @PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
-        return musicService.favouriteMusic(isFavourite,Integer.parseInt(musicId));
+    CommonResult<BlankRes> favouriteMusic(@PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
+        return musicService.favouriteMusic(Integer.parseInt(musicId));
     }
     @GetMapping("/music/{musicId}/favourite")
     CommonResult<MusicFavouriteRes> getFavourite(@PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
         return musicService.getFavourite(Integer.parseInt(musicId));
     }
+
+    @PutMapping("/music/{musicId}/click")
+    CommonResult<BlankRes> clickMusic(@PathVariable("musicId")@NotBlank(message = "歌曲id不能为空") String musicId){
+        return musicService.clickMusic(Integer.parseInt(musicId));
+    }
+
+
+
+
 
 
     @Pass

@@ -30,7 +30,7 @@ public interface PostService extends IService<Post> {
 
     CommonResult<BlankRes> deleteComment(Integer commentId);
 
-    CommonResult<BlankRes> likePost(Integer isLike, Integer postId);
+    CommonResult<BlankRes> likePost(Integer postId);
 
     CommonResult<PostLikeStatusRes> getLike(Integer postId);
 }
