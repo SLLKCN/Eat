@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 public class CookbookRes {
-    CookbookRes(Cookbook cookbook){
+    public CookbookRes(Cookbook cookbook){
         this.cookbookId=cookbook.getId();
         this.cookName=cookbook.getName();
         this.introduction=cookbook.getIntroduction();

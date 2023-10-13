@@ -5,10 +5,7 @@ import com.example.eat.model.dto.CommonResult;
 import com.example.eat.model.dto.param.post.PostCommentCreateDto;
 import com.example.eat.model.dto.param.post.PostCreateDto;
 import com.example.eat.model.dto.res.BlankRes;
-import com.example.eat.model.dto.res.post.PostCommentsGetRes;
-import com.example.eat.model.dto.res.post.PostLikeStatusRes;
-import com.example.eat.model.dto.res.post.PostRes;
-import com.example.eat.model.dto.res.post.PostsGetRes;
+import com.example.eat.model.dto.res.post.*;
 import com.example.eat.model.po.post.Post;
 
 public interface PostService extends IService<Post> {
@@ -33,4 +30,8 @@ public interface PostService extends IService<Post> {
     CommonResult<BlankRes> likePost(Integer postId);
 
     CommonResult<PostLikeStatusRes> getLike(Integer postId);
+
+    CommonResult<PostsGetRes> getLikePosts(Integer pageNum, Integer pageSize);
+
+    CommonResult<CommentCountRes> getCommentCount();
 }

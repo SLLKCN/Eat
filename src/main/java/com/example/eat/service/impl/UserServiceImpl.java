@@ -95,6 +95,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
             user.setWeight(putUser.getWeight());
             user.setIdentity(putUser.getIdentity());
             user.setDisease(putUser.getDisease());
+            user.setSignature(putUser.getSignature());
             this.updateById(user);
         }catch (Exception e){
             log.error("更新用户信息失败");
@@ -160,10 +161,10 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
             user.setStatus(status);
             this.updateById(user);
         }catch (Exception e){
-            log.error("更新用户信息失败");
-            return CommonResult.fail("更新用户信息失败");
+            log.error("设置状态失败");
+            return CommonResult.fail("设置状态失败");
         }
-        return CommonResult.success("更新用户信息成功");
+        return CommonResult.success("设置状态成功");
     }
 
     @Override

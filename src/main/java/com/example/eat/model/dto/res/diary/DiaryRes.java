@@ -1,9 +1,12 @@
 package com.example.eat.model.dto.res.diary;
 
 import com.example.eat.model.po.diary.DiaryInfo;
+import com.example.eat.model.po.diary.FoodInfo;
 import lombok.Data;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 public class DiaryRes {
@@ -11,16 +14,20 @@ public class DiaryRes {
     private String title;
     private String content;
     private String image;
-    private Timestamp createTime;
+    private String createTime;
     private Timestamp updateTime;
-    private Double vitamin;
-    public DiaryRes(DiaryInfo diaryInfo){
+    private FoodInfoRes foodInfoRes;
+    public DiaryRes(DiaryInfo diaryInfo, FoodInfo foodInfo){
         this.id=diaryInfo.getId();
         this.title= diaryInfo.getTitle();
         this.content= diaryInfo.getContent();
         this.image= diaryInfo.getImage();
-        this.createTime=diaryInfo.getCreateTime();
         this.updateTime=diaryInfo.getUpdateTime();
-        this.vitamin=diaryInfo.getVitamin();
+        this.foodInfoRes=new FoodInfoRes(foodInfo);
+
+        LocalDateTime timestamp = LocalDateTime.parse(diaryInfo.getCreateTime().toString(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"));
+        int hour = timestamp.getHour();
+        int minute=timestamp.getMinute();
+        createTime=hour+":"+minute;
     }
 }

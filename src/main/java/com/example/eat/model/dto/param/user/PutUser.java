@@ -14,4 +14,5 @@ public class PutUser {
     private Double weight;
     private String identity;
     private String disease;
+    private String signature;
 }

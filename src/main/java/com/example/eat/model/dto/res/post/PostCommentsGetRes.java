@@ -2,9 +2,11 @@ package com.example.eat.model.dto.res.post;
 
 import com.example.eat.model.po.post.PostComment;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+@NoArgsConstructor
 
 @Data
 public class PostCommentsGetRes {

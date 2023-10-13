@@ -21,7 +21,7 @@ public class DiaryInfo {
 
     private String image;
 
-    private Double vitamin;
+    private Integer foodId;
 
     @TableField(fill = FieldFill.INSERT,jdbcType = TIMESTAMP)
     private Timestamp createTime;

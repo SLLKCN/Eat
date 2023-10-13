@@ -23,7 +23,7 @@ public class FileController {
     FileService fileService;
     @Pass
     @GetMapping("/file")
-    CommonResult<FileUrlRes> getFileUrl(@NotNull(message = "文件名不可为空") @RequestParam("filename") String name){
+    CommonResult<FileUrlRes> getFileUrl(@NotNull(message = "文件名不可为空") @RequestParam("name") String name){
         return fileService.getFileUrl(name);
     }
     @Pass

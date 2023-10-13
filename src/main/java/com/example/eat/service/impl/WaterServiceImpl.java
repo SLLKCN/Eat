@@ -6,6 +6,7 @@ import com.example.eat.dao.water.WaterDao;
 import com.example.eat.model.dto.CommonResult;
 import com.example.eat.model.dto.res.BlankRes;
 import com.example.eat.model.dto.res.water.WaterRes;
+import com.example.eat.model.dto.res.water.WaterWeekRes;
 import com.example.eat.model.po.water.Water;
 import com.example.eat.service.WaterService;
 import com.example.eat.util.JwtUtils;
@@ -13,6 +14,7 @@ import com.example.eat.util.TokenThreadLocalUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class WaterServiceImpl extends ServiceImpl<WaterDao, Water> implements WaterService {
@@ -83,9 +85,39 @@ public class WaterServiceImpl extends ServiceImpl<WaterDao, Water> implements Wa
             waterRes.setCup(water.getCup());
         }catch (Exception e){
             e.printStackTrace();
-            return CommonResult.fail("喝水失败");
+            return CommonResult.fail("查看饮水量失败");
         }
 
         return CommonResult.success("查看饮水量成功",waterRes);
+    }
+
+    @Override
+    public CommonResult<WaterWeekRes> getThisweekWaterCup() {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+
+        WaterWeekRes waterWeekRes;
+        try{
+            QueryWrapper<Water> waterQueryWrapper=new QueryWrapper<>();
+            waterQueryWrapper.between("time", LocalDate.now().minusDays(6).atStartOfDay(), LocalDate.now().plusDays(1).atStartOfDay());
+            List<Water> waterList=this.list(waterQueryWrapper);
+
+            int sum=0;
+            for (Water temp:waterList){
+                sum+=temp.getCup();
+            }
+            waterWeekRes=new WaterWeekRes(sum);
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("查看饮水量失败");
+        }
+
+        return CommonResult.success("查看饮水量成功",waterWeekRes);
     }
 }

@@ -9,11 +9,5 @@ import java.util.List;
 @Data
 public class DiarysGetRes {
     private Long total;
-    private List<DiaryRes> diaryResList=new ArrayList<>();
-    public DiarysGetRes(List<DiaryInfo> diaryInfoList){
-        for(DiaryInfo temp:diaryInfoList){
-            DiaryRes diaryRes=new DiaryRes(temp);
-            diaryResList.add(diaryRes);
-        }
-    }
+    private List<DiaryRes> diaryResList;
 }

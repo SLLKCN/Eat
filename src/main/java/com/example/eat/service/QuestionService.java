@@ -10,5 +10,5 @@ import com.example.eat.model.po.question.QuestionInfo;
 public interface QuestionService extends IService<QuestionInfo> {
     CommonResult<QuestionRes> sentQuestion(QuestionDto questionDto);
 
-    CommonResult<QuestionsGetRes> getQuestionHistory();
+    CommonResult<QuestionsGetRes> getQuestionHistory(Integer pageNum, Integer pageSize);
 }

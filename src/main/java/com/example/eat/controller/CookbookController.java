@@ -4,7 +4,9 @@ import com.example.eat.aop.Pass;
 import com.example.eat.model.dto.CommonResult;
 import com.example.eat.model.dto.param.cookbook.PostCookbook;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.cookbook.CollectionCountRes;
 import com.example.eat.model.dto.res.cookbook.CookbookCollectRes;
+import com.example.eat.model.dto.res.cookbook.CookbookRes;
 import com.example.eat.model.dto.res.cookbook.CookbooksGetRes;
 import com.example.eat.service.CookbookService;
 import jakarta.validation.constraints.NotBlank;
@@ -55,6 +57,16 @@ public class CookbookController {
         return cookbookService.getCollect(Integer.parseInt(cookbookId));
     }
 
+    @PutMapping("/cookbooks/{cookbookId}/click")
+    CommonResult<BlankRes> clickCookbook(@PathVariable("cookbookId")@NotBlank(message = "菜谱号不能为空") String cookbookId){
+        return cookbookService.clickCookbook(Integer.parseInt(cookbookId));
+    }
+
+    @GetMapping("/user/collection/count")
+    CommonResult<CollectionCountRes> getCollectionCount(){
+        return cookbookService.getCollectionCount();
+    }
+
 
     @Pass
     @PostMapping("/cookbook")
@@ -67,5 +79,10 @@ public class CookbookController {
                                             @RequestParam("image") MultipartFile file){
         log.info("文件上传");
         return  cookbookService.insertImage(cookbookid,file);
+    }
+
+    @GetMapping("/cookbook/{cookbookId}")
+    CommonResult<CookbookRes> getCookbookById(@PathVariable("cookbookId") Integer cookbookid){
+        return  cookbookService.getCookbookById(cookbookid);
     }
 }

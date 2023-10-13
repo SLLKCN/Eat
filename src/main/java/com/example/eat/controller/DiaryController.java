@@ -5,9 +5,12 @@ import com.example.eat.model.dto.param.diary.DateDto;
 import com.example.eat.model.dto.param.diary.DiaryCreateDto;
 import com.example.eat.model.dto.res.BlankRes;
 import com.example.eat.model.dto.res.diary.DiarysGetRes;
+import com.example.eat.model.dto.res.diary.NutritionDayRes;
+import com.example.eat.model.dto.res.diary.NutritionWeekRes;
 import com.example.eat.service.DiaryInfoService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,4 +33,15 @@ public class DiaryController {
     CommonResult<DiarysGetRes> getDiaryByData(@Valid @RequestBody DateDto dateDto){
         return diaryInfoService.getDiaryByData(dateDto);
     }
+
+    @GetMapping("/nutrition/today")
+    CommonResult<NutritionDayRes> getTodayNutrition(){
+        return diaryInfoService.getTodayNutrition();
+    }
+
+    @GetMapping("/nutrition/thisweek")
+    CommonResult<NutritionWeekRes> getThisWeekNutrition(){
+        return diaryInfoService.getThisWeekNutrition();
+    }
+
 }

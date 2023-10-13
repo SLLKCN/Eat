@@ -2,10 +2,12 @@ package com.example.eat.model.dto.res.music;
 
 import com.example.eat.model.po.music.Music;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@NoArgsConstructor
 @Data
 public class MusicGetRes {
 

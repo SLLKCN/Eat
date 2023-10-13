@@ -6,6 +6,7 @@ import com.example.eat.model.dto.param.Music.PostMusic;
 import com.example.eat.model.dto.param.Music.PostMusicInMusicList;
 import com.example.eat.model.dto.param.Music.PostMusicList;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.music.FavouriteCountRes;
 import com.example.eat.model.dto.res.music.MusicFavouriteRes;
 import com.example.eat.model.dto.res.music.MusicGetRes;
 import com.example.eat.model.dto.res.music.MusicListsGetRes;
@@ -49,7 +50,24 @@ public class MusicController {
         return musicService.clickMusic(Integer.parseInt(musicId));
     }
 
-
+    @PutMapping("/music/list/{musicListId}/click")
+    CommonResult<BlankRes> clickMusicList(@PathVariable("musicListId")@NotBlank(message = "歌单id不能为空") String musicListId){
+        return musicService.clickMusicList(Integer.parseInt(musicListId));
+    }
+    @GetMapping("/music/healing")
+    CommonResult<MusicGetRes> getHealingMusic(@RequestParam(defaultValue = "1") Integer pageNum,
+                                              @RequestParam(defaultValue = "10") Integer pageSize){
+        return musicService.getHealingMusic(pageNum,pageSize);
+    }
+    @GetMapping("/music/lists/personalize")
+    CommonResult<MusicListsGetRes> getPersonalizeMusicList(@RequestParam(defaultValue = "1") Integer pageNum,
+                                                           @RequestParam(defaultValue = "10") Integer pageSize){
+        return musicService.getPersonalizeMusicList(pageNum,pageSize);
+    }
+    @GetMapping("/user/favourite/count")
+    CommonResult<FavouriteCountRes> getFavouriteCount(){
+        return musicService.getFavouriteCount();
+    }
 
 
 

@@ -4,10 +4,7 @@ import com.example.eat.model.dto.CommonResult;
 import com.example.eat.model.dto.param.post.PostCommentCreateDto;
 import com.example.eat.model.dto.param.post.PostCreateDto;
 import com.example.eat.model.dto.res.BlankRes;
-import com.example.eat.model.dto.res.post.PostCommentsGetRes;
-import com.example.eat.model.dto.res.post.PostLikeStatusRes;
-import com.example.eat.model.dto.res.post.PostRes;
-import com.example.eat.model.dto.res.post.PostsGetRes;
+import com.example.eat.model.dto.res.post.*;
 import com.example.eat.service.PostService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -75,4 +72,13 @@ public class PostController {
         return postService.getLike(Integer.parseInt(postId));
     }
 
+    @GetMapping("/posts/like")
+    CommonResult<PostsGetRes> getLikePosts(@RequestParam(defaultValue = "1") Integer pageNum,
+                                         @RequestParam(defaultValue = "10") Integer pageSize){
+        return postService.getLikePosts(pageNum,pageSize);
+    }
+    @GetMapping("/user/comment/count")
+    CommonResult<CommentCountRes> getCommentCount(){
+        return postService.getCommentCount();
+    }
 }

@@ -13,11 +13,10 @@ import com.example.eat.model.dto.param.post.PostCommentCreateDto;
 import com.example.eat.model.dto.param.post.PostCreateDto;
 import com.example.eat.model.dto.param.post.PostImageUploadDto;
 import com.example.eat.model.dto.res.BlankRes;
-import com.example.eat.model.dto.res.post.PostCommentsGetRes;
-import com.example.eat.model.dto.res.post.PostLikeStatusRes;
-import com.example.eat.model.dto.res.post.PostRes;
-import com.example.eat.model.dto.res.post.PostsGetRes;
+import com.example.eat.model.dto.res.music.FavouriteCountRes;
+import com.example.eat.model.dto.res.post.*;
 import com.example.eat.model.dto.res.user.UserRes;
+import com.example.eat.model.po.music.Favourite;
 import com.example.eat.model.po.post.Post;
 import com.example.eat.model.po.post.PostComment;
 import com.example.eat.model.po.post.PostImage;
@@ -45,6 +44,7 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
     PostLikeDao postLikeDao;
     @Autowired
     MinioUtil minioUtil;
+    @Autowired
     UserServiceImpl userService;
     @Override
     public CommonResult<BlankRes> addPost(PostCreateDto postCreateDto) {
@@ -83,7 +83,6 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             e.printStackTrace();
             return CommonResult.fail("添加帖子图片失败");
         }
-
         return CommonResult.fail("添加帖子成功");
     }
 
@@ -141,6 +140,9 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         PostRes postRes;
         try{
             postRes=getPostByPostId(postId);
+            if(postRes==null){
+                return CommonResult.fail("帖子不存在");
+            }
         }catch(Exception e){
             e.printStackTrace();
             return CommonResult.fail("查找单个帖子失败");
@@ -269,7 +271,16 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             QueryWrapper<PostComment> postCommentQueryWrapper=new QueryWrapper<>();
             postCommentQueryWrapper.eq("post_id",postId);
             IPage<PostComment> postCommentIPage=postCommentDao.selectPage(postCommentPage,postCommentQueryWrapper);
-            postCommentsGetRes=new PostCommentsGetRes(postCommentIPage.getRecords());
+
+            postCommentsGetRes=new PostCommentsGetRes();
+            List<PostCommentRes> postCommentList=new ArrayList<>();
+            for(PostComment postComment:postCommentIPage.getRecords()){
+                PostCommentRes postCommentRes=new PostCommentRes(postComment);
+                UserRes userRes=userService.getUserResById(postComment.getUserId());
+                postCommentRes.setUserRes(userRes);
+                postCommentList.add(postCommentRes);
+            }
+            postCommentsGetRes.setPostCommentResList(postCommentList);
             postCommentsGetRes.setTotal(postCommentIPage.getTotal());
         }catch(Exception e){
             e.printStackTrace();
@@ -375,6 +386,64 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         return CommonResult.success("查看帖子点赞状态成功",postLikeStatusRes);
     }
 
+    @Override
+    public CommonResult<PostsGetRes> getLikePosts(Integer pageNum, Integer pageSize) {
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
+            return CommonResult.fail("用户不存在");
+        }
+        Page<Post> postPage=new Page<>(pageNum,pageSize);
+        PostsGetRes postsGetRes;
+        try{
+            QueryWrapper<PostLike> postLikeQueryWrapper=new QueryWrapper<>();
+            postLikeQueryWrapper.eq("user_id",userId);
+            List<PostLike> postLikeList=postLikeDao.selectList(postLikeQueryWrapper);
+            //检查是否存在点赞的帖子
+            if(postLikeList.size()==0){
+                postsGetRes=new PostsGetRes();
+                postsGetRes.setTotal((long)0);
+                return CommonResult.success("查询我的帖子成功",postsGetRes);
+            }
+            //将每个帖子
+            postsGetRes=new PostsGetRes();
+            List<PostRes> postResList=new ArrayList<>();
+            for(PostLike temp:postLikeList){
+                postResList.add(getPostByPostId(temp.getPostId()));
+            }
+            postsGetRes.setTotal((long)postLikeList.size());
+            postsGetRes.setPostResList(postResList);
+        }catch(Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("查询我的帖子失败");
+        }
+        return CommonResult.success("查询我的帖子成功",postsGetRes);
+    }
+
+    @Override
+    public CommonResult<CommentCountRes> getCommentCount() {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+        CommentCountRes commentCountRes=new CommentCountRes();
+        try{
+            QueryWrapper<PostComment> postCommentQueryWrapper=new QueryWrapper<>();
+            postCommentQueryWrapper.eq("user_id",userId);
+            commentCountRes.setCommentCount(postCommentDao.selectCount(postCommentQueryWrapper));
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("获取我的评论数失败");
+        }
+        return CommonResult.success("获取我的评论数成功",commentCountRes);
+    }
+
 
     //根据帖子id获取PostRes
     public PostRes getPostByPostId(Integer postId){
@@ -388,7 +457,7 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
             postRes=new PostRes(post,postImageList,userRes);
         }catch(Exception e){
             e.printStackTrace();
-            return null;
+            throw e;
         }
         return postRes;
     }

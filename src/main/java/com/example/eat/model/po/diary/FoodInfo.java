@@ -10,8 +10,12 @@ import lombok.Data;
 public class FoodInfo {
     @TableId(type = IdType.AUTO)
     private Integer id;
-
-    private Integer userId;
     private String name;
-    private String calorie;
+    private Integer calorie;
+    private Integer vitamin;
+    private Integer protein;
+    private Integer carbon;
+    private Integer fiber;
+    private Integer fat;
+    private Integer minerals;
 }

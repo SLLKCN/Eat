@@ -13,6 +13,5 @@ public class MusicList {
     private String name;
     private String introduction;
     private String image;
-    private Integer favouriteCount;
 
 }

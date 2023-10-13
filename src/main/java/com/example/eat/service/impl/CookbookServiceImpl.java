@@ -7,18 +7,24 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.eat.dao.cookbook.ClickDao;
 import com.example.eat.dao.cookbook.CollectionDao;
 import com.example.eat.dao.cookbook.CookbookDao;
+import com.example.eat.dao.cookbook.CookbookScoreDao;
 import com.example.eat.model.dto.CommonResult;
 import com.example.eat.model.dto.param.cookbook.PostCookbook;
 import com.example.eat.model.dto.res.BlankRes;
+import com.example.eat.model.dto.res.cookbook.CollectionCountRes;
 import com.example.eat.model.dto.res.cookbook.CookbookCollectRes;
+import com.example.eat.model.dto.res.cookbook.CookbookRes;
 import com.example.eat.model.dto.res.cookbook.CookbooksGetRes;
 import com.example.eat.model.po.cookbook.Click;
 import com.example.eat.model.po.cookbook.Collection;
 import com.example.eat.model.po.cookbook.Cookbook;
+import com.example.eat.model.po.cookbook.CookbookScore;
+import com.example.eat.model.po.music.MusicListScore;
 import com.example.eat.service.CookbookService;
 import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
 import com.example.eat.util.MinioUtil;
+import com.example.eat.util.RecommendUtil;
 import com.example.eat.util.TokenThreadLocalUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +45,10 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
     UserService userService;
     @Autowired
     MinioUtil minioUtil;
+    @Autowired
+    CookbookScoreDao cookbookScoreDao;
+    @Autowired
+    RecommendUtil recommendUtil;
 
     @Override
     public CommonResult<CookbooksGetRes> getPersonalizeCookbooks(Integer pageNum, Integer pageSize, String type) {
@@ -55,8 +65,11 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
         CookbooksGetRes cookbooksGetRes;
 
         try{
+            List<String> recommand=recommendUtil.getCoobookRecommend(userId);
+
             // 构建查询条件
             QueryWrapper<Cookbook> queryWrapper = new QueryWrapper<>();
+            queryWrapper.in("id",recommand);
             if (type!=null&&type.length()!=0) {
                 queryWrapper.eq("type", type);
             }
@@ -67,6 +80,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
                 cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
             }
             cookbooksGetRes=new CookbooksGetRes(cookbookList);
+            cookbooksGetRes.setTotal(cookbookIPage.getTotal());
         }catch (Exception e){
             log.error("查询菜谱失败");
             return CommonResult.fail("查询菜谱失败");
@@ -164,6 +178,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
                 cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
             }
             cookbooksGetRes=new CookbooksGetRes(cookbookList);
+            cookbooksGetRes.setTotal(cookbookIPage.getTotal());
         }catch (Exception e){
             log.error("查询菜谱失败");
             return CommonResult.fail("查询菜谱失败");
@@ -251,6 +266,85 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
     }
 
     @Override
+    public CommonResult<BlankRes> clickCookbook(Integer cookbookId) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+        try{
+            QueryWrapper<CookbookScore> cookbookScoreQueryWrapper=new QueryWrapper<>();
+            cookbookScoreQueryWrapper.eq("user_id",userId);
+            cookbookScoreQueryWrapper.eq("cookbook_id",cookbookId);
+            CookbookScore cookbookScore=cookbookScoreDao.selectOne(cookbookScoreQueryWrapper);
+            if(cookbookScore==null){
+                cookbookScore=new CookbookScore();
+                cookbookScore.setUserId(userId);
+                cookbookScore.setCookbookId(cookbookId);
+                cookbookScore.setScore(1);
+                cookbookScoreDao.insert(cookbookScore);
+                return CommonResult.success("点击成功");
+            }
+            cookbookScore.setScore(cookbookScore.getScore()+1);
+            cookbookScoreDao.updateById(cookbookScore);
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("点击失败");
+        }
+        return CommonResult.success("点击成功");
+    }
+
+    @Override
+    public CommonResult<CollectionCountRes> getCollectionCount() {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+        CollectionCountRes collectionCountRes=new CollectionCountRes();
+        try{
+            QueryWrapper<Collection> collectionQueryWrapper=new QueryWrapper<>();
+            collectionQueryWrapper.eq("user_id",userId);
+            collectionCountRes.setCollectionCount(collectionService.count(collectionQueryWrapper));
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("获取我的收藏数失败");
+        }
+        return CommonResult.success("获取我的收藏数成功",collectionCountRes);
+    }
+
+    @Override
+    public CommonResult<CookbookRes> getCookbookById(Integer cookbookid) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在  user:{}",JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken()));
+            return CommonResult.fail("用户不存在");
+        }
+
+        CookbookRes cookbookRes;
+
+        try{
+            QueryWrapper<Cookbook> cookbookQueryWrapper=new QueryWrapper<>();
+            Cookbook cookbook=this.getById(cookbookid);
+            cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
+            cookbookRes=new CookbookRes(cookbook);
+        }catch (Exception e){
+            log.error("查询菜谱失败");
+            return CommonResult.fail("查询菜谱失败");
+        }
+        return CommonResult.success("查询成功",cookbookRes);
+    }
+
+    @Override
     public CommonResult<BlankRes> addCookbook(PostCookbook postCookbook) {
         Cookbook cookbook=new Cookbook();
         try{
@@ -295,7 +389,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             collectionQueryWrapper.eq("user_id",userId);
             collectionQueryWrapper.eq("cookbook_id",cookbookId);
             collection=collectionService.getOne(collectionQueryWrapper);
-            if(collection!=null){
+            if(collection==null){
                 return 0;
             }
             return 1;
@@ -312,5 +406,6 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
     }
     @Service
     public static class CollectionServiceImpl extends ServiceImpl<CollectionDao, Collection>{
+
     }
 }

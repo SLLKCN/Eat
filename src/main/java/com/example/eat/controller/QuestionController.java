@@ -20,7 +20,8 @@ public class QuestionController {
         return questionService.sentQuestion(questionDto);
     }
     @GetMapping("/questions/history")
-    CommonResult<QuestionsGetRes> getQuestionHistory(){
-        return questionService.getQuestionHistory();
+    CommonResult<QuestionsGetRes> getQuestionHistory(@RequestParam(defaultValue = "1") Integer pageNum,
+                                                     @RequestParam(defaultValue = "10") Integer pageSize){
+        return questionService.getQuestionHistory(pageNum,pageSize);
     }
 }
