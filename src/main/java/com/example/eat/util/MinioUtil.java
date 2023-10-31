@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -47,9 +46,19 @@ public class MinioUtil {
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
-        String suffix = Objects.requireNonNull(multipartFile.getContentType()).replace('/','.');
-        String fullName = filename+suffix;
-        log.info("upload:"+fullName);
+        String contentType = multipartFile.getContentType();
+        String suffix;
+        if (contentType != null) {
+            if (contentType.startsWith("audio/")) {
+                suffix = ".mp3";
+            } else {
+                suffix = "." + contentType.substring(contentType.lastIndexOf("/") + 1);
+            }
+        } else {
+            suffix = "";
+        }
+        String fullName = filename + suffix;
+        log.info("upload: " + fullName);
         try {
             InputStream file = multipartFile.getInputStream();
             minioClient.putObject(

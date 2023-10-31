@@ -69,6 +69,21 @@ public class MusicController {
         return musicService.getFavouriteCount();
     }
 
+    @GetMapping("/musiclist/{musiclistId}/favourite")
+    CommonResult<MusicFavouriteRes> getMusiclistFavourite(@PathVariable("musiclistId")@NotBlank(message = "歌单id不能为空") String musiclistId){
+        return musicService.getMusiclistFavourite(Integer.parseInt(musiclistId));
+    }
+
+    @PutMapping("/musiclist/{musiclistId}/favourite")
+    CommonResult<BlankRes> favouriteMusiclist(@PathVariable("musiclistId")@NotBlank(message = "歌单id不能为空") String musiclistId){
+        return musicService.favouriteMusiclist(Integer.parseInt(musiclistId));
+    }
+
+    @GetMapping("/users/musiclist")
+    CommonResult<MusicListsGetRes> getFavouriteMusiclist(){
+        return musicService.getFavouriteMusiclist();
+    }
+
 
 
 

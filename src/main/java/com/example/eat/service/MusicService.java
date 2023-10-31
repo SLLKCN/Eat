@@ -50,4 +50,10 @@ public interface MusicService extends IService<Music> {
     CommonResult<BlankRes> clickMusicList(Integer musicListId);
 
     CommonResult<FavouriteCountRes> getFavouriteCount();
+
+    CommonResult<MusicFavouriteRes> getMusiclistFavourite(Integer musiclistId);
+
+    CommonResult<BlankRes> favouriteMusiclist(Integer musiclistId);
+
+    CommonResult<MusicListsGetRes> getFavouriteMusiclist();
 }

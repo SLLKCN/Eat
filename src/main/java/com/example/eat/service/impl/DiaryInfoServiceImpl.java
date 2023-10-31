@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.eat.dao.diary.DiaryInfoDao;
 import com.example.eat.dao.diary.FoodInfoDao;
 import com.example.eat.model.dto.CommonResult;
-import com.example.eat.model.dto.param.diary.DateDto;
 import com.example.eat.model.dto.param.diary.DiaryCreateDto;
 import com.example.eat.model.dto.res.BlankRes;
 import com.example.eat.model.dto.res.diary.DiaryRes;
@@ -53,10 +52,16 @@ public class DiaryInfoServiceImpl extends ServiceImpl<DiaryInfoDao, DiaryInfo> i
             QueryWrapper<FoodInfo> foodInfoQueryWrapper=new QueryWrapper<>();
             foodInfoQueryWrapper.eq("name",diaryCreateDto.getName());
             FoodInfo foodInfo=foodInfoDao.selectOne(foodInfoQueryWrapper);
-            if(foodInfo==null){
-                return CommonResult.fail("数据库中未记录该食品数据");
+            if(diaryCreateDto.getName().contains("果")||diaryCreateDto.getName().contains("桃")){
+                diaryInfo.setFoodId(6);
             }
-            diaryInfo.setFoodId(foodInfo.getId());
+            else if(foodInfo==null){
+                diaryInfo.setFoodId(7);
+//                return CommonResult.fail("数据库中未记录该食品数据");
+            }
+            else {
+                diaryInfo.setFoodId(foodInfo.getId());
+            }
 
 
             this.save(diaryInfo);
@@ -104,7 +109,7 @@ public class DiaryInfoServiceImpl extends ServiceImpl<DiaryInfoDao, DiaryInfo> i
     }
 
     @Override
-    public CommonResult<DiarysGetRes> getDiaryByData(DateDto dateDto) {
+    public CommonResult<DiarysGetRes> getDiaryByData(LocalDate date) {
         //判断是否存在该用户
         Integer userId;
         try {
@@ -118,7 +123,7 @@ public class DiaryInfoServiceImpl extends ServiceImpl<DiaryInfoDao, DiaryInfo> i
         try{
             QueryWrapper<DiaryInfo> diaryInfoQueryWrapper=new QueryWrapper<>();
             diaryInfoQueryWrapper.eq("user_id",userId);
-            diaryInfoQueryWrapper.between("create_time", dateDto.getDate().atStartOfDay(), dateDto.getDate().plusDays(1).atStartOfDay());
+            diaryInfoQueryWrapper.between("create_time", date.atStartOfDay(), date.plusDays(1).atStartOfDay());
             diaryInfoQueryWrapper.orderByAsc("create_time");
             List<DiaryInfo> diaryInfoList=this.list(diaryInfoQueryWrapper);
 
@@ -235,5 +240,61 @@ public class DiaryInfoServiceImpl extends ServiceImpl<DiaryInfoDao, DiaryInfo> i
             return CommonResult.fail("获取每周摄入失败");
         }
         return CommonResult.success("获取每周摄入成功",nutritionWeekRes);
+    }
+
+    @Override
+    public CommonResult<BlankRes> updateDiary(Integer diaryId, DiaryCreateDto diaryCreateDto) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+
+        try{
+            QueryWrapper<DiaryInfo> diaryInfoQueryWrapper=new QueryWrapper<>();
+            diaryInfoQueryWrapper.eq("user_id",userId);
+            diaryInfoQueryWrapper.eq("id",diaryId);
+            DiaryInfo diaryInfo=this.getOne(diaryInfoQueryWrapper);
+            if(diaryInfo==null){
+                return CommonResult.fail("未找到日记");
+            }
+            diaryInfo.setTitle(diaryCreateDto.getTitle());
+            diaryInfo.setContent(diaryCreateDto.getContent());
+            this.updateById(diaryInfo);
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("修改失败");
+        }
+        return CommonResult.success("修改成功");
+    }
+
+    @Override
+    public CommonResult<BlankRes> deleteDiary(Integer diaryId) {
+        //判断是否存在该用户
+        Integer userId;
+        try {
+            userId = JwtUtils.getUserIdByToken(TokenThreadLocalUtil.getInstance().getToken());
+        } catch (Exception e) {
+            log.warn("用户不存在");
+            return CommonResult.fail("用户不存在");
+        }
+
+        try{
+            QueryWrapper<DiaryInfo> diaryInfoQueryWrapper=new QueryWrapper<>();
+            diaryInfoQueryWrapper.eq("user_id",userId);
+            diaryInfoQueryWrapper.eq("id",diaryId);
+            DiaryInfo diaryInfo=this.getOne(diaryInfoQueryWrapper);
+            if(diaryInfo==null){
+                return CommonResult.fail("未找到日记");
+            }
+            this.removeById(diaryId);
+        }catch (Exception e){
+            e.printStackTrace();
+            return CommonResult.fail("删除失败");
+        }
+        return CommonResult.success("删除成功");
     }
 }

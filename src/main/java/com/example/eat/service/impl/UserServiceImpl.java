@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.eat.dao.user.UserDao;
 import com.example.eat.model.dto.CommonResult;
-import com.example.eat.model.dto.param.user.PostUser;
+import com.example.eat.model.dto.param.user.PostUserLogin;
+import com.example.eat.model.dto.param.user.PostUserRegister;
 import com.example.eat.model.dto.param.user.PutUser;
 import com.example.eat.model.dto.res.BlankRes;
-import com.example.eat.model.dto.res.post.PostRes;
 import com.example.eat.model.dto.res.user.LoginRes;
 import com.example.eat.model.dto.res.user.UserRes;
 import com.example.eat.model.po.user.User;
@@ -15,8 +15,20 @@ import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
 import com.example.eat.util.TokenThreadLocalUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -24,17 +36,46 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     @Autowired
     UserDao userDao;
     @Override
-    public CommonResult<LoginRes> register(PostUser postUser) {
+    public CommonResult<LoginRes> register(PostUserRegister postUserRegister) {
         LoginRes loginRes=new LoginRes();
         try{
             QueryWrapper<User> queryWrapper=new QueryWrapper<>();
-            queryWrapper.eq("account",postUser.getAccount());
-            if(this.count(queryWrapper)>0){
+            queryWrapper.eq("account",postUserRegister.getAccount());
+            if(this.baseMapper.exists(queryWrapper)){
                 return CommonResult.fail("已存在该账号");
             }
+            queryWrapper.clear();
+            queryWrapper.eq("telephone",postUserRegister.getTelephone());
+            if(this.baseMapper.exists(queryWrapper)){
+                return CommonResult.fail("该手机号已注册");
+            }
+
+
+            String signature="SIPC115";
+            //加密
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            // 将手机号转换为字节数组
+            byte[] phoneNumberBytes = (postUserRegister.getTelephone()+signature).getBytes(StandardCharsets.UTF_8);
+
+            // 计算哈希值
+            byte[] hashBytes = md.digest(phoneNumberBytes);
+
+            // 将哈希值转换为整数
+            long hashValue = 0;
+            for (int i = 0; i < 8; i++) {
+                hashValue = (hashValue << 8) | (hashBytes[i] & 0xFF);
+            }
+
+            if(!postUserRegister.getCode().equals(String.format("%06d", Math.abs(hashValue % 1000000)))){
+                return CommonResult.fail("验证码错误");
+            }
+
+
             User user=new User();
-            user.setAccount(postUser.getAccount());
-            user.setPassword(postUser.getPassword());
+            user.setAccount(postUserRegister.getAccount());
+            user.setPassword(postUserRegister.getPassword());
+            user.setTelephone(postUserRegister.getTelephone());
             this.save(user);
 
             loginRes.setToken(JwtUtils.sign(user));
@@ -46,19 +87,21 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         return CommonResult.success("注册成功",loginRes);
     }
     @Override
-    public CommonResult<LoginRes> login(PostUser postUser) {
+    public CommonResult<LoginRes> login(PostUserLogin postUserLogin) {
         LoginRes loginRes=new LoginRes();
         try{
             QueryWrapper<User> queryWrapper=new QueryWrapper<>();
-            queryWrapper.eq("account",postUser.getAccount());
-
-
+            if(postUserLogin.getAccount().length()<11){
+                queryWrapper.eq("account",postUserLogin.getAccount());
+            }else {
+                queryWrapper.eq("telephone",postUserLogin.getAccount());
+            }
 
             User user=userDao.selectOne(queryWrapper);
             if(user==null){
-                return CommonResult.fail("账号不存在");
+                return CommonResult.fail("账号或手机号不存在");
             }
-            if(!postUser.getPassword().equals(user.getPassword())){
+            if(!postUserLogin.getPassword().equals(user.getPassword())){
                 return CommonResult.fail("密码错误");
             }
 
@@ -188,6 +231,68 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
             return CommonResult.fail("更新用户信息失败");
         }
         return CommonResult.success("更新用户信息成功");
+    }
+
+    @Override
+    public CommonResult<BlankRes> getCode(String telephone) {
+        try {
+            QueryWrapper<User> userQueryWrapper=new QueryWrapper<>();
+            userQueryWrapper.eq("telephone",telephone);
+            if (userDao.exists(userQueryWrapper)){
+                return CommonResult.fail("该手机号已注册");
+            }
+            String signature="SIPC115";
+            //加密
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            // 将手机号转换为字节数组
+            byte[] phoneNumberBytes = (telephone+signature).getBytes(StandardCharsets.UTF_8);
+
+            // 计算哈希值
+            byte[] hashBytes = md.digest(phoneNumberBytes);
+
+            // 将哈希值转换为整数
+            long hashValue = 0;
+            for (int i = 0; i < 8; i++) {
+                hashValue = (hashValue << 8) | (hashBytes[i] & 0xFF);
+            }
+
+            String code=String.format("%06d", Math.abs(hashValue % 1000000));
+            String mobile=telephone;
+
+            String host = "https://gyytz.market.alicloudapi.com";
+            String path = "/sms/smsSend";
+            String method = "POST";
+            String appcode = "214f0769dc774ced8c0708d369dfc960";
+            Map<String, String> headers = new HashMap<String, String>();
+            headers.put("Authorization", "APPCODE " + appcode);
+            Map<String, String> querys = new HashMap<String, String>();
+            querys.put("mobile", mobile);
+            querys.put("param", "**code**:"+code+",**minute**:5");
+            querys.put("smsSignId", "2e65b1bb3d054466b82f0c9d125465e2");
+            querys.put("templateId", "908e94ccf08b4476ba6c876d13f084ad");
+            Map<String, String> bodys = new HashMap<String, String>();
+
+            HttpClient httpClient = HttpClients.createDefault();
+            HttpPost httpPost = new HttpPost(host + path);
+            // 设置请求头
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                httpPost.addHeader(entry.getKey(), entry.getValue());
+            }
+            // 设置请求参数
+            for (Map.Entry<String, String> entry : querys.entrySet()) {
+                httpPost.addHeader(entry.getKey(), entry.getValue());
+            }
+
+            HttpResponse response = httpClient.execute(httpPost);
+            HttpEntity entity = response.getEntity();
+            String result = EntityUtils.toString(entity);
+            System.out.println(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return CommonResult.fail("发送验证码失败");
+        }
+        return CommonResult.success("发送验证码成功");
     }
 
     public UserRes getUserResById(Integer userId){

@@ -2,7 +2,8 @@ package com.example.eat.controller;
 
 import com.example.eat.aop.Pass;
 import com.example.eat.model.dto.CommonResult;
-import com.example.eat.model.dto.param.user.PostUser;
+import com.example.eat.model.dto.param.user.PostUserLogin;
+import com.example.eat.model.dto.param.user.PostUserRegister;
 import com.example.eat.model.dto.param.user.PutUser;
 import com.example.eat.model.dto.res.BlankRes;
 import com.example.eat.model.dto.res.user.LoginRes;
@@ -24,13 +25,13 @@ public class UserController {
     UserService userService;
     @Pass
     @PostMapping("/register")
-    CommonResult<LoginRes> register(@Valid @RequestBody PostUser postUser){
-        return userService.register(postUser);
+    CommonResult<LoginRes> register(@Valid @RequestBody PostUserRegister postUserRegister){
+        return userService.register(postUserRegister);
     }
     @Pass
     @PostMapping("/login")
-    CommonResult<LoginRes> login(@Valid @RequestBody PostUser postUser){
-        return userService.login(postUser);
+    CommonResult<LoginRes> login(@Valid @RequestBody PostUserLogin postUserLogin){
+        return userService.login(postUserLogin);
     }
     @PutMapping("/user")
     CommonResult<BlankRes> updateUserInfo(@Valid @RequestBody PutUser putUser){
@@ -52,4 +53,10 @@ public class UserController {
     CommonResult<BlankRes> updateUserSignature(@NotNull(message = "signature不能为空") @RequestParam("signature") String signature){
         return userService.updateUserSignature(signature);
     }
+    @Pass
+    @PostMapping("/telephone")
+    CommonResult<BlankRes> getCode(@RequestParam String telephone){
+        return userService.getCode(telephone);
+    }
+
 }

@@ -19,7 +19,6 @@ import com.example.eat.model.po.cookbook.Click;
 import com.example.eat.model.po.cookbook.Collection;
 import com.example.eat.model.po.cookbook.Cookbook;
 import com.example.eat.model.po.cookbook.CookbookScore;
-import com.example.eat.model.po.music.MusicListScore;
 import com.example.eat.service.CookbookService;
 import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
@@ -66,6 +65,10 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
 
         try{
             List<String> recommand=recommendUtil.getCoobookRecommend(userId);
+            if(recommand==null||recommand.size()==0){
+                recommand=new ArrayList<>();
+                recommand.add("-1");
+            }
 
             // 构建查询条件
             QueryWrapper<Cookbook> queryWrapper = new QueryWrapper<>();
@@ -76,9 +79,27 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             // 执行分页查询
             IPage<Cookbook> cookbookIPage = page(page, queryWrapper);
             List<Cookbook> cookbookList=cookbookIPage.getRecords();
-            for (Cookbook cookbook:cookbookList) {
-                cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
+
+            if(cookbookList==null||cookbookList.size()==0){
+                cookbookList=new ArrayList<>();
             }
+
+            if(cookbookList.size()<10){
+                QueryWrapper<Cookbook> queryWrapper1=new QueryWrapper<>();
+                queryWrapper1.notIn("id",recommand);
+                if (type!=null&&type.length()!=0) {
+                    queryWrapper1.eq("type", type);
+                }
+                List<Cookbook> cookbookList1=this.list(queryWrapper1);
+                for(Cookbook temp:cookbookList1){
+                    if(cookbookList.size()>=10){
+                        break;
+                    }
+                    cookbookList.add(temp);
+                }
+            }
+
+
             cookbooksGetRes=new CookbooksGetRes(cookbookList);
             cookbooksGetRes.setTotal(cookbookIPage.getTotal());
         }catch (Exception e){
@@ -102,9 +123,7 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             // 执行分页查询
             IPage<Cookbook> cookbookIPage = page(page, queryWrapper);
             List<Cookbook> cookbookList=cookbookIPage.getRecords();
-            for (Cookbook cookbook:cookbookList) {
-                cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
-            }
+
             cookbooksGetRes=new CookbooksGetRes(cookbookList);
         }catch (Exception e){
             log.error("查询菜谱失败");
@@ -149,9 +168,6 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             // 执行分页查询
             IPage<Cookbook> cookbookIPage = page(page, queryWrapper);
             List<Cookbook> cookbookList=cookbookIPage.getRecords();
-            for (Cookbook cookbook:cookbookList) {
-                cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
-            }
             cookbooksGetRes=new CookbooksGetRes(cookbookList);
         }catch (Exception e){
             log.error("查询菜谱失败");
@@ -174,9 +190,6 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
             // 执行分页查询
             IPage<Cookbook> cookbookIPage = page(page, queryWrapper);
             List<Cookbook> cookbookList=cookbookIPage.getRecords();
-            for (Cookbook cookbook:cookbookList) {
-                cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
-            }
             cookbooksGetRes=new CookbooksGetRes(cookbookList);
             cookbooksGetRes.setTotal(cookbookIPage.getTotal());
         }catch (Exception e){
@@ -333,7 +346,6 @@ public class CookbookServiceImpl extends ServiceImpl<CookbookDao, Cookbook> impl
         CookbookRes cookbookRes;
 
         try{
-            QueryWrapper<Cookbook> cookbookQueryWrapper=new QueryWrapper<>();
             Cookbook cookbook=this.getById(cookbookid);
             cookbook.setImage(minioUtil.downloadFile(cookbook.getImage()));
             cookbookRes=new CookbookRes(cookbook);

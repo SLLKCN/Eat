@@ -22,8 +22,6 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.WebSocket;
 import org.springframework.stereotype.Service;
-
-import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -51,67 +49,66 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionInfoDao, QuestionIn
         QuestionRes questionRes=new QuestionRes();
         try {
             //发送问题，接收答案
-            String answer="";
+            String answer = "";
+            if(!checkQuestion(questionDto.getQuestion())){
+                answer=getAnswer(questionDto.getQuestion());
+            }else {
 
 
-            // 如果是无效字符串，则不对大模型进行请求
-            if (StrUtil.isBlank(questionDto.getQuestion())) {
-                return CommonResult.fail("无效问题，请重新输入");
-            }
-            // 获取连接令牌
-            if (!xfXhStreamClient.operateToken(XfXhStreamClient.GET_TOKEN_STATUS)) {
-                return CommonResult.fail("当前大模型连接数过多，请稍后再试");
-            }
 
-            // 创建消息对象
-            MsgDTO msgDTO = MsgDTO.createUserMsg(questionDto.getQuestion());
-            // 创建监听器
-            XfXhWebSocketListener listener = new XfXhWebSocketListener();
-            // 发送问题给大模型，生成 websocket 连接
-            WebSocket webSocket = xfXhStreamClient.sendMsg(UUID.randomUUID().toString().substring(0, 10), Collections.singletonList(msgDTO), listener);
-            if (webSocket == null) {
-                // 归还令牌
-                xfXhStreamClient.operateToken(XfXhStreamClient.BACK_TOKEN_STATUS);
-                return CommonResult.fail("系统内部错误，请联系管理员");
-            }
-            try {
-                int count = 0;
-                // 为了避免死循环，设置循环次数来定义超时时长
-                int maxCount = xfXhConfig.getMaxResponseTime() * 5;
-                while (count <= maxCount) {
-                    Thread.sleep(200);
-                    if (listener.isWsCloseFlag()) {
-                        break;
+                // 如果是无效字符串，则不对大模型进行请求
+                if (StrUtil.isBlank(questionDto.getQuestion())) {
+                    return CommonResult.fail("无效问题，请重新输入");
+                }
+                // 获取连接令牌
+                if (!xfXhStreamClient.operateToken(XfXhStreamClient.GET_TOKEN_STATUS)) {
+                    return CommonResult.fail("当前大模型连接数过多，请稍后再试");
+                }
+
+                // 创建消息对象
+                MsgDTO msgDTO = MsgDTO.createUserMsg(questionDto.getQuestion());
+                // 创建监听器
+                XfXhWebSocketListener listener = new XfXhWebSocketListener();
+                // 发送问题给大模型，生成 websocket 连接
+                WebSocket webSocket = xfXhStreamClient.sendMsg(UUID.randomUUID().toString().substring(0, 10), Collections.singletonList(msgDTO), listener);
+                if (webSocket == null) {
+                    // 归还令牌
+                    xfXhStreamClient.operateToken(XfXhStreamClient.BACK_TOKEN_STATUS);
+                    return CommonResult.fail("系统内部错误，请联系管理员");
+                }
+                try {
+                    int count = 0;
+                    // 为了避免死循环，设置循环次数来定义超时时长
+                    int maxCount = xfXhConfig.getMaxResponseTime() * 5;
+                    while (count <= maxCount) {
+                        Thread.sleep(200);
+                        if (listener.isWsCloseFlag()) {
+                            break;
+                        }
+                        count++;
                     }
-                    count++;
-                }
-                if (count > maxCount) {
-                    return CommonResult.fail("大模型响应超时，请联系管理员");
-                }
-                // 响应大模型的答案
-                answer=listener.getAnswer().toString();
+                    if (count > maxCount) {
+                        return CommonResult.fail("大模型响应超时，请联系管理员");
+                    }
+                    // 响应大模型的答案
+                    answer = listener.getAnswer().toString();
 
 
-            } catch (InterruptedException e) {
-                log.error("错误：" + e.getMessage());
-                return CommonResult.fail("系统内部错误，请联系管理员");
-            } finally {
-                // 关闭 websocket 连接
-                webSocket.close(1000, "");
-                // 归还令牌
-                xfXhStreamClient.operateToken(XfXhStreamClient.BACK_TOKEN_STATUS);
+                } catch (InterruptedException e) {
+                    log.error("错误：" + e.getMessage());
+                    return CommonResult.fail("系统内部错误，请联系管理员");
+                } finally {
+                    // 关闭 websocket 连接
+                    webSocket.close(1000, "");
+                    // 归还令牌
+                    xfXhStreamClient.operateToken(XfXhStreamClient.BACK_TOKEN_STATUS);
+                }
+
             }
 
-
-
-
-
-
-
-
-
-
-
+            if(answer.contains("讯飞星火")){
+                answer="这个问题我还没学会，问我一些关于健康的问题吧";
+            }
 
 
             QuestionInfo questionInfo=new QuestionInfo();
@@ -155,5 +152,42 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionInfoDao, QuestionIn
             return CommonResult.fail("查找历史问题失败");
         }
         return CommonResult.success("查找历史问题成功",questionsGetRes);
+    }
+
+    private Boolean checkQuestion(String question){
+        if(question.equals("你好")){
+            return false;
+        }
+        if(question.equals("你是谁")){
+            return false;
+        }
+        if(question.equals("你是什么")){
+            return false;
+        }
+        if(question.equals("你是什么东西")){
+            return false;
+        }
+        if(question.equals("介绍一下自己")){
+            return false;
+        }
+        return true;
+    }
+    private String getAnswer(String question){
+        if(question.equals("你好")){
+            return "你好，我是你的健康顾问，帮你解答关于健康的问题";
+        }
+        if(question.equals("你是谁")){
+            return "我是你的健康顾问，帮你解答关于健康的问题";
+        }
+        if(question.equals("你是什么")){
+            return "我是你的健康顾问，帮你解答关于健康的问题";
+        }
+        if(question.equals("你是什么东西")){
+            return "我是你的健康顾问，帮你解答关于健康的问题";
+        }
+        if(question.equals("介绍一下自己")){
+            return "我是你的健康顾问，帮你解答关于健康的问题";
+        }
+        return "";
     }
 }

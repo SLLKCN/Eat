@@ -11,12 +11,14 @@ public class MusicRes {
         this.introduction=music.getIntroduction();
         this.image= music.getImage();
         this.music=music.getMusic();
+        this.isFavourite=music.getFavouriteCount();
     }
     private Integer id;
     private String name;
     private String introduction;
     private String image;
     private String music;
+    private Integer isFavourite;
 
 
 }

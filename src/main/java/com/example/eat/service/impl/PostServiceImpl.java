@@ -13,16 +13,13 @@ import com.example.eat.model.dto.param.post.PostCommentCreateDto;
 import com.example.eat.model.dto.param.post.PostCreateDto;
 import com.example.eat.model.dto.param.post.PostImageUploadDto;
 import com.example.eat.model.dto.res.BlankRes;
-import com.example.eat.model.dto.res.music.FavouriteCountRes;
 import com.example.eat.model.dto.res.post.*;
 import com.example.eat.model.dto.res.user.UserRes;
-import com.example.eat.model.po.music.Favourite;
 import com.example.eat.model.po.post.Post;
 import com.example.eat.model.po.post.PostComment;
 import com.example.eat.model.po.post.PostImage;
 import com.example.eat.model.po.post.PostLike;
 import com.example.eat.service.PostService;
-import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
 import com.example.eat.util.MinioUtil;
 import com.example.eat.util.TokenThreadLocalUtil;
@@ -162,8 +159,11 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         Page<Post> postPage = new Page<>(pageNum, pageSize);
         PostsGetRes postsGetRes=new PostsGetRes();
         try{
+
             //获取Post
-            IPage<Post> postIPage=page(postPage);
+            QueryWrapper<Post> postQueryWrapper=new QueryWrapper<>();
+            postQueryWrapper.orderByDesc("create_time");
+            IPage<Post> postIPage=page(postPage,postQueryWrapper);
             List<PostRes> postResList=new ArrayList<>();
             //将帖子及其图片封装
             for (Post temp: postIPage.getRecords()) {
@@ -270,6 +270,7 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         try{
             QueryWrapper<PostComment> postCommentQueryWrapper=new QueryWrapper<>();
             postCommentQueryWrapper.eq("post_id",postId);
+            postCommentQueryWrapper.orderByDesc("create_time");
             IPage<PostComment> postCommentIPage=postCommentDao.selectPage(postCommentPage,postCommentQueryWrapper);
 
             postCommentsGetRes=new PostCommentsGetRes();
@@ -468,6 +469,7 @@ public class PostServiceImpl extends ServiceImpl<PostDao, Post> implements PostS
         try{
             QueryWrapper<Post> postQueryWrapper=new QueryWrapper<>();
             postQueryWrapper.eq("user_id",userId);
+            postQueryWrapper.orderByDesc("create_time");
             //获取Post
             IPage<Post> postIPage=page(postPage,postQueryWrapper);
             List<PostRes> postResList=new ArrayList<>();
