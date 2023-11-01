@@ -13,6 +13,7 @@ import com.example.eat.model.dto.res.user.UserRes;
 import com.example.eat.model.po.user.User;
 import com.example.eat.service.UserService;
 import com.example.eat.util.JwtUtils;
+import com.example.eat.util.SHA256Util;
 import com.example.eat.util.TokenThreadLocalUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
@@ -35,6 +36,7 @@ import java.util.Map;
 public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserService {
     @Autowired
     UserDao userDao;
+    private String signature="SIPC115";
     @Override
     public CommonResult<LoginRes> register(PostUserRegister postUserRegister) {
         LoginRes loginRes=new LoginRes();
@@ -73,9 +75,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
 
 
             User user=new User();
-            user.setAccount(postUserRegister.getAccount());
-            user.setPassword(postUserRegister.getPassword());
-            user.setTelephone(postUserRegister.getTelephone());
+            user.setAccount(SHA256Util.encrypt(postUserRegister.getAccount()+signature));
+            user.setPassword( SHA256Util.encrypt(postUserRegister.getPassword()+signature));
+            user.setTelephone( SHA256Util.encrypt(postUserRegister.getTelephone()+signature));
             this.save(user);
 
             loginRes.setToken(JwtUtils.sign(user));
@@ -92,16 +94,16 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         try{
             QueryWrapper<User> queryWrapper=new QueryWrapper<>();
             if(postUserLogin.getAccount().length()<11){
-                queryWrapper.eq("account",postUserLogin.getAccount());
+                queryWrapper.eq("account", SHA256Util.encrypt(postUserLogin.getAccount()+signature));
             }else {
-                queryWrapper.eq("telephone",postUserLogin.getAccount());
+                queryWrapper.eq("telephone", SHA256Util.encrypt(postUserLogin.getAccount()+signature));
             }
 
             User user=userDao.selectOne(queryWrapper);
             if(user==null){
                 return CommonResult.fail("账号或手机号不存在");
             }
-            if(!postUserLogin.getPassword().equals(user.getPassword())){
+            if(!user.getPassword().equals( SHA256Util.encrypt(postUserLogin.getPassword()+signature))){
                 return CommonResult.fail("密码错误");
             }
 

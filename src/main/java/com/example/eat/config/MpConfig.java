@@ -1,4 +1,4 @@
-package com.example.eat.config.MP;
+package com.example.eat.config;
 
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;

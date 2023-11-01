@@ -1,4 +1,4 @@
-package com.example.eat.config.MP;
+package com.example.eat.config;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.springframework.stereotype.Component;
